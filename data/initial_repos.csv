@@ -45,7 +45,6 @@ apache/orc
 apache/crunch
 apache/ignite
 apache/helix
-apache/solr
 apache/chukwa
 apache/incubator-tez
 postgres/postgres

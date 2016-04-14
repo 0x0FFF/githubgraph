@@ -1,5 +1,5 @@
 # IP Address for the private VM network
-ip_address = "192.168.10.200"
+ip_address = "192.168.10.199"
 
 # Basic Vagrant config (API version 2)
 Vagrant.configure(2) do |config|
@@ -10,6 +10,7 @@ Vagrant.configure(2) do |config|
   # Make this VM reachable on the host network as well, so that other
   # VM's running other browsers can access our dev server.
   config.vm.network :private_network, ip: ip_address
+  config.vm.network :forwarded_port, guest: 22, host: 2223
 
   # Give a reasonable amount of cpu and memory to the VM
   config.vm.provider "virtualbox" do |vb|

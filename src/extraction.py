@@ -30,7 +30,7 @@ def execute_os(command):
         raise_error('Exception ' + str(sys.exc_info()[1]))
     return (ret, out, err)
 
-def execute_db(query, hasResult=True):
+def execute_db(query, hasResult=True, canIgnore=False):
     res = None
     conn = pg8000.connect(user="vagrant", database="vagrant")
     cursor = conn.cursor()
@@ -40,7 +40,7 @@ def execute_db(query, hasResult=True):
     except:
         logging.error('Cannot execute this query:')
         logging.error(query)
-        raise_error(str(sys.exc_info()[1]))
+        raise_error(str(sys.exc_info()[1]), isexit = (not canIgnore))
     conn.commit()
     if hasResult:
         res = cursor.fetchall()
@@ -53,11 +53,12 @@ def getRepository():
         select id, repo
             from repos
             where status is null
+            order by id
             limit 1
         """)
     if repo is None or len(repo) == 0:
         logging.info("No more repositories to process")
-        repo = None
+        return None, None
     return repo[0][0], repo[0][1]
 
 def cloneRepository(name, work_dir):
@@ -112,15 +113,16 @@ def insertCommit(id, commit, l1re, l2re):
             deletions = l2.group(3).strip(',').strip().split(' ')[0]
         query = """
             insert into commits
-                (repo_id, author_name, author_email, commit_date,
+                (repo_id, commit_hash, author_name, author_email, commit_date,
                 files_changed, insertions, deletions)
-            values (%d, '%s', '%s', '%s'::timestamp,
+            values (%d, '%s', '%s', '%s', '%s'::timestamp,
                     %s, %s, %s)
-            """ % (id, l1.group(1).replace("'", "''").replace("\\", "\\\\"),
+            """ % (id, l1.group(1),
                        l1.group(2).replace("'", "''").replace("\\", "\\\\"),
-                       l1.group(3),
+                       l1.group(3).replace("'", "''").replace("\\", "\\\\"),
+                       l1.group(4),
                    l2.group(1), insertions, deletions)
-        execute_db(query, hasResult = False)
+        execute_db(query, hasResult = False, canIgnore = True)
     return
 
 def getCommits(name, id, work_dir):
@@ -128,12 +130,12 @@ def getCommits(name, id, work_dir):
     reponame = name.split('/')[1].strip()
     repodir = '%s/%s' % (work_dir, reponame)
     ret, out, err = execute_os ("cd " + repodir +
-            " && git log --pretty=format:'%an|%ae|%ad' --shortstat --all")
+            " && git log --pretty=format:'%H|%an|%ae|%ad' --shortstat --all")
     if ret != 0:
         raise_error("Cannot get commit logs", out=out, err=err)
     # Remove old commits if any
     execute_db("delete from commits where repo_id = %d" % id, hasResult = False)
-    l1re = re.compile("([^|]+)\|([^|]+)\|\w+ (\w+ [0-9]+ [0-9\:]+ [0-9]+) .*")
+    l1re = re.compile("([^|]*)\|([^|]*)\|([^|]*)\|\w+ (\w+ [0-9]+ [0-9\:]+ [0-9]+) .*")
     l2re = re.compile("\s+([0-9]+) \w+ changed(,\s+[0-9]+ insert\w+\(\+\))?(,\s+[0-9]+ del\w+\(\-\))?")
     for commit in out.split('\n\n'):
         commit = commit.strip()
