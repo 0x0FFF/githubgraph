@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Copyright 2016 Alexey Grishchenko
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -x
 
 IP_ADDRESS=$1
@@ -16,13 +28,13 @@ sudo setenforce 0
 sudo sed -i 's/^SELINUX=.*$/SELINUX=disabled/' /etc/selinux/config
 
 # Setting up hostname for host-private network
-sudo hostnamectl set-hostname githubgraph-vm.pivotal.io
-sudo hostname githubgraph-vm.pivotal.io
+sudo hostnamectl set-hostname githubgraph-vm.example.com
+sudo hostname githubgraph-vm.example.com
 sudo sed -i '/vagrant/d' /etc/hosts
-sudo bash -c "echo '$IP_ADDRESS githubgraph-vm.pivotal.io githubgraph-vm' >> /etc/hosts"
+sudo bash -c "echo '$IP_ADDRESS githubgraph-vm.example.com githubgraph-vm' >> /etc/hosts"
 sudo sed -i '/HOSTNAME/d' /etc/sysconfig/network
-sudo bash -c 'echo "HOSTNAME=githubgraph-vm.pivotal.io" >> /etc/sysconfig/network'
-sudo bash -c 'echo "DHCP_HOSTNAME=githubgraph-vm.pivotal.io" >> /etc/sysconfig/network'
+sudo bash -c 'echo "HOSTNAME=githubgraph-vm.example.com" >> /etc/sysconfig/network'
+sudo bash -c 'echo "DHCP_HOSTNAME=githubgraph-vm.example.com" >> /etc/sysconfig/network'
 
 # GPDB Kernel Settings
 sudo rm -f /etc/sysctl.d/gpdb.conf
